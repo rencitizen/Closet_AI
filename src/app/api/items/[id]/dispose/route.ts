@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { ZodError } from "zod";
 
 import { created, fromZodError, internalServerError } from "@/lib/api";
+import { requireAuthenticatedUser } from "@/lib/server/auth";
+import { requireOwnedItemId } from "@/lib/server/closets";
 import { parseJson } from "@/lib/server/request";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { disposeItemSchema } from "@/lib/validators/closet";
@@ -12,7 +14,19 @@ type RouteContext = {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    const { user, error: authError } = await requireAuthenticatedUser(request);
+
+    if (authError) {
+      return authError;
+    }
+
     const { id } = await context.params;
+    const ownedItem = await requireOwnedItemId(id, user.id);
+
+    if (ownedItem.error) {
+      return ownedItem.error;
+    }
+
     const input = await parseJson(request, disposeItemSchema);
     const supabase = getSupabaseServerClient();
     const disposalInsert = await supabase

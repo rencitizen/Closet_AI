@@ -2,17 +2,24 @@ import { NextRequest } from "next/server";
 import { ZodError } from "zod";
 
 import { created, fromZodError, internalServerError, ok } from "@/lib/api";
-import { requireClosetId } from "@/lib/server/closet-context";
+import { requireAuthenticatedUser } from "@/lib/server/auth";
+import { requireOwnedClosetId } from "@/lib/server/closets";
 import { parseJson, parseSearchParams } from "@/lib/server/request";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createItemSchema, itemQuerySchema } from "@/lib/validators/closet";
 
 export async function GET(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuthenticatedUser(request);
+
+    if (authError) {
+      return authError;
+    }
+
     const query = parseSearchParams(request, itemQuerySchema);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const { closetId, error: closetError } = requireClosetId(request);
+    const { closetId, error: closetError } = await requireOwnedClosetId(request, user.id);
 
     if (closetError) {
       return closetError;
@@ -72,8 +79,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await requireAuthenticatedUser(request);
+
+    if (authError) {
+      return authError;
+    }
+
     const input = await parseJson(request, createItemSchema);
-    const { closetId, error: closetError } = requireClosetId(request);
+    const { closetId, error: closetError } = await requireOwnedClosetId(request, user.id);
 
     if (closetError) {
       return closetError;
