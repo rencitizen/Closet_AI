@@ -62,6 +62,7 @@ export const createItemSchema = z.object({
   care_type: careTypeSchema.default("machine_wash"),
   laundry_interval_wears: z.number().int().min(1).max(99).optional(),
   location_id: uuid.optional(),
+  primary_image_url: z.string().url().optional(),
   notes: z.string().trim().max(5000).optional(),
 });
 

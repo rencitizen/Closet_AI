@@ -24,6 +24,7 @@ type ClothingItem = {
   season_tags: string[];
   wear_count: number;
   purchase_price: number | null;
+  primary_image_url?: string | null;
 };
 
 type ClosetResponse = {
@@ -211,11 +212,8 @@ export function ClosetApp() {
         password,
       });
 
-      if (result.error) {
-        throw result.error;
-      }
-
-      setNotice("新規登録を受け付けました。メール確認が有効な設定なら受信メールを確認してください。");
+      if (result.error) throw result.error;
+      setNotice("新規登録を受け付けました。メール確認が有効な場合は受信メールを確認してください。");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "新規登録に失敗しました。");
     } finally {
@@ -236,10 +234,7 @@ export function ClosetApp() {
         password,
       });
 
-      if (result.error) {
-        throw result.error;
-      }
-
+      if (result.error) throw result.error;
       setNotice("ログインしました。");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "ログインに失敗しました。");
@@ -256,9 +251,7 @@ export function ClosetApp() {
 
       const result = await supabase.auth.signOut();
 
-      if (result.error) {
-        throw result.error;
-      }
+      if (result.error) throw result.error;
 
       window.localStorage.removeItem(storageKeys.closetId);
       setNotice("ログアウトしました。");
@@ -306,65 +299,6 @@ export function ClosetApp() {
       setNotice("クローゼットを作成しました。");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "クローゼット作成に失敗しました。");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function handleCreateItem(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!session) {
-      setError("先にログインしてください。");
-      return;
-    }
-
-    if (!selectedClosetId) {
-      setError("先にクローゼットを選択してください。");
-      return;
-    }
-
-    try {
-      setBusy("create-item");
-      setError(null);
-      setNotice(null);
-
-      const response = await fetch("/api/items", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...buildAuthHeaders(session, selectedClosetId),
-        },
-        body: JSON.stringify({
-          name: itemName,
-          category: itemCategory,
-          brand: itemBrand || undefined,
-          color: itemColor || undefined,
-          season_tags: [itemSeason],
-          purchase_price: itemPrice ? Number(itemPrice) : undefined,
-          status: itemStatus,
-          notes: itemNotes || undefined,
-        }),
-      });
-      const data = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "アイテム登録に失敗しました。");
-      }
-
-      setItemName("");
-      setItemBrand("");
-      setItemColor("");
-      setItemPrice("");
-      setItemNotes("");
-      setAnalysis(null);
-      setSelectedImageName("");
-      setImagePreviewUrl("");
-      setImageDataUrl("");
-      await loadItems(session, selectedClosetId);
-      setNotice("アイテムを登録しました。");
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "アイテム登録に失敗しました。");
     } finally {
       setBusy(null);
     }
@@ -441,16 +375,160 @@ export function ClosetApp() {
     }
   }
 
+  async function uploadSelectedImage(activeSession: Session, closetId: string) {
+    if (!imageDataUrl) {
+      return undefined;
+    }
+
+    const response = await fetch("/api/items/upload-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...buildAuthHeaders(activeSession, closetId),
+      },
+      body: JSON.stringify({
+        image_data_url: imageDataUrl,
+        filename: selectedImageName || undefined,
+      }),
+    });
+    const data = (await response.json()) as { public_url?: string; error?: string };
+
+    if (!response.ok || !data.public_url) {
+      throw new Error(data.error ?? "画像アップロードに失敗しました。");
+    }
+
+    return data.public_url;
+  }
+
+  async function handleCreateItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!session) {
+      setError("先にログインしてください。");
+      return;
+    }
+
+    if (!selectedClosetId) {
+      setError("先にクローゼットを選択してください。");
+      return;
+    }
+
+    try {
+      setBusy("create-item");
+      setError(null);
+      setNotice(null);
+
+      const primaryImageUrl = await uploadSelectedImage(session, selectedClosetId);
+
+      const response = await fetch("/api/items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...buildAuthHeaders(session, selectedClosetId),
+        },
+        body: JSON.stringify({
+          name: itemName,
+          category: itemCategory,
+          brand: itemBrand || undefined,
+          color: itemColor || undefined,
+          season_tags: [itemSeason],
+          purchase_price: itemPrice ? Number(itemPrice) : undefined,
+          status: itemStatus,
+          notes: itemNotes || undefined,
+          primary_image_url: primaryImageUrl,
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "アイテム登録に失敗しました。");
+      }
+
+      setItemName("");
+      setItemBrand("");
+      setItemColor("");
+      setItemPrice("");
+      setItemNotes("");
+      setAnalysis(null);
+      setSelectedImageName("");
+      setImagePreviewUrl("");
+      setImageDataUrl("");
+      await loadItems(session, selectedClosetId);
+      setNotice("アイテムを登録しました。");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "アイテム登録に失敗しました。");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <main className="shell">
+      {!session ? (
+        <section className="auth-shell">
+          <section className="panel auth-panel" id="auth">
+            <div className="auth-header">
+              <span className="eyebrow">Closet OS</span>
+              <h1 className="sidebar-title">Closet AI</h1>
+              <p className="meta">
+                先にログインまたは新規登録してください。認証後にクローゼット管理画面へ入ります。
+              </p>
+            </div>
+
+            {error ? (
+              <section className="panel section error-panel">
+                <h2>エラー</h2>
+                <p>{error}</p>
+              </section>
+            ) : null}
+
+            {notice ? (
+              <section className="panel section notice-panel">
+                <h2>通知</h2>
+                <p>{notice}</p>
+              </section>
+            ) : null}
+
+            <div className="two-column auth-columns">
+              <form className="stack-form" onSubmit={handleSignIn}>
+                <label className="field">
+                  <span>メールアドレス</span>
+                  <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                </label>
+                <label className="field">
+                  <span>パスワード</span>
+                  <input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+                </label>
+                <div className="actions">
+                  <button className="button primary" disabled={busy === "signin"} type="submit">
+                    {busy === "signin" ? "ログイン中..." : "ログイン"}
+                  </button>
+                  <button className="button" disabled={busy === "signup"} onClick={handleSignUp} type="button">
+                    {busy === "signup" ? "登録中..." : "新規登録"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="stack-list">
+                <article className="feature">
+                  <h3>利用開始</h3>
+                  <p>メールアドレスとパスワードで認証します。</p>
+                </article>
+                <article className="feature">
+                  <h3>認証後にできること</h3>
+                  <p>クローゼット作成、画像付きアイテム登録、AI補助入力、グラフィック一覧表示。</p>
+                </article>
+              </div>
+            </div>
+          </section>
+        </section>
+      ) : (
       <section className="workspace-grid">
         <aside className="panel sidebar">
           <div className="sidebar-block">
             <span className="eyebrow">Closet OS</span>
             <h1 className="sidebar-title">Closet AI</h1>
-            <p className="meta">
-              認証、クローゼット管理、アイテム登録までをすぐ使える画面にまとめています。
-            </p>
+            <p className="meta">画像中心のクローゼット管理。認証、クローゼット、AI補助登録、ビジュアル一覧まで使えます。</p>
           </div>
 
           <nav className="sidebar-nav">
@@ -482,12 +560,12 @@ export function ClosetApp() {
         <div className="workspace-main">
           <section className="panel section hero-section">
             <div className="kicker">
-              <h2>現在の利用状況</h2>
+              <h2>グラフィックビュー</h2>
               <span className="meta">{user?.email ?? "未ログイン"}</span>
             </div>
             <p className="hero-text">
-              メールアドレスとパスワードでログインし、ユーザーごとに独立したクローゼットを作成できます。
-              選択中のクローゼットに対してアイテムを登録し、一覧で確認できます。
+              画像をアップロードしてアイテムを登録し、そのまま写真付きカード一覧でクローゼットを確認できます。
+              AI解析は入力補助として使い、最終保存前に内容を調整できます。
             </p>
           </section>
 
@@ -505,50 +583,15 @@ export function ClosetApp() {
             </section>
           ) : null}
 
-          <section className="panel section" id="auth">
+          <section className="panel section">
             <div className="kicker">
-              <h2>認証</h2>
-              <span className="meta">Supabase Auth</span>
+              <h2>アカウント</h2>
+              <span className="meta">{user?.email}</span>
             </div>
-            <div className="two-column">
-              <form className="stack-form" onSubmit={handleSignIn}>
-                <label className="field">
-                  <span>メールアドレス</span>
-                  <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-                </label>
-                <label className="field">
-                  <span>パスワード</span>
-                  <input
-                    required
-                    minLength={6}
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                </label>
-                <div className="actions">
-                  <button className="button primary" disabled={busy === "signin"} type="submit">
-                    {busy === "signin" ? "ログイン中..." : "ログイン"}
-                  </button>
-                  <button className="button" disabled={busy === "signup"} onClick={handleSignUp} type="button">
-                    {busy === "signup" ? "登録中..." : "新規登録"}
-                  </button>
-                  <button className="button" disabled={!session || busy === "signout"} onClick={handleSignOut} type="button">
-                    {busy === "signout" ? "ログアウト中..." : "ログアウト"}
-                  </button>
-                </div>
-              </form>
-
-              <div className="stack-list">
-                <article className="feature">
-                  <h3>現在のユーザー</h3>
-                  <p>{user?.email ?? "ログインしていません。"}</p>
-                </article>
-                <article className="feature">
-                  <h3>認証方式</h3>
-                  <p>メールアドレスとパスワードを使った Supabase Auth を利用しています。</p>
-                </article>
-              </div>
+            <div className="actions">
+              <button className="button" disabled={busy === "signout"} onClick={handleSignOut} type="button">
+                {busy === "signout" ? "ログアウト中..." : "ログアウト"}
+              </button>
             </div>
           </section>
 
@@ -591,14 +634,14 @@ export function ClosetApp() {
 
           <section className="panel section" id="items">
             <div className="kicker">
-              <h2>アイテム</h2>
+              <h2>アイテム登録</h2>
               <span className="meta">{selectedCloset ? `対象: ${selectedCloset.name}` : "クローゼット未選択"}</span>
             </div>
 
             <div className="two-column">
               <section className="feature">
-                <h3>AI 解析</h3>
-                <p>画像からカテゴリ、色、ブランド候補、季節、メモを推定して入力補助します。</p>
+                <h3>画像とAI補助</h3>
+                <p>画像を選ぶと、そのまま保存できます。AI解析を使うとカテゴリや色などを自動提案します。</p>
                 <label className="field">
                   <span>画像を選択</span>
                   <input
@@ -613,12 +656,7 @@ export function ClosetApp() {
                 {selectedImageName ? <p className="meta">選択中: {selectedImageName}</p> : null}
                 {imagePreviewUrl ? <img alt="選択した衣類画像" className="analysis-preview" src={imagePreviewUrl} /> : null}
                 <div className="actions">
-                  <button
-                    className="button"
-                    disabled={!session || !imageDataUrl || busy === "analyze-item"}
-                    onClick={handleAnalyzeItem}
-                    type="button"
-                  >
+                  <button className="button" disabled={!session || !imageDataUrl || busy === "analyze-item"} onClick={handleAnalyzeItem} type="button">
                     {busy === "analyze-item" ? "解析中..." : "AIで解析"}
                   </button>
                 </div>
@@ -636,11 +674,8 @@ export function ClosetApp() {
               </section>
 
               <section className="feature">
-                <h3>登録の流れ</h3>
-                <p>1. 画像を選択</p>
-                <p>2. AIで候補生成</p>
-                <p>3. 内容を確認・修正</p>
-                <p>4. アイテムを保存</p>
+                <h3>登録フォーム</h3>
+                <p>AI候補を反映した後でも自由に修正できます。画像があれば自動でアップロードします。</p>
               </section>
             </div>
 
@@ -703,33 +738,45 @@ export function ClosetApp() {
               </div>
             </form>
 
-            {items.length === 0 ? (
-              <p className="meta empty-state">まだアイテムがありません。クローゼットを選択して登録してください。</p>
-            ) : (
-              <div className="item-grid">
-                {items.map((item) => (
-                  <article className="item-card" key={item.id}>
-                    <div className="item-card-head">
-                      <strong>{item.name}</strong>
-                      <span className={`status-pill status-${item.status}`}>{item.status}</span>
+            <div className="visual-grid">
+              {items.length === 0 ? (
+                <p className="meta empty-state">まだアイテムがありません。画像付きで登録するとここにビジュアルカードで表示されます。</p>
+              ) : (
+                items.map((item) => (
+                  <article className="visual-card" key={item.id}>
+                    <div className="visual-card-media">
+                      {item.primary_image_url ? (
+                        <img alt={item.name} className="visual-card-image" src={item.primary_image_url} />
+                      ) : (
+                        <div className="visual-card-fallback">
+                          <span>{item.category}</span>
+                        </div>
+                      )}
                     </div>
-                    <p className="meta">
-                      {item.category}
-                      {item.brand ? ` / ${item.brand}` : ""}
-                      {item.color ? ` / ${item.color}` : ""}
-                    </p>
-                    <p className="meta">season: {item.season_tags.join(", ") || "-"}</p>
-                    <p className="meta">wear count: {item.wear_count}</p>
-                    <p className="meta">
-                      price: {item.purchase_price != null ? `${item.purchase_price.toLocaleString()} JPY` : "-"}
-                    </p>
+                    <div className="visual-card-body">
+                      <div className="item-card-head">
+                        <strong>{item.name}</strong>
+                        <span className={`status-pill status-${item.status}`}>{item.status}</span>
+                      </div>
+                      <p className="meta">
+                        {item.category}
+                        {item.brand ? ` / ${item.brand}` : ""}
+                        {item.color ? ` / ${item.color}` : ""}
+                      </p>
+                      <p className="meta">season: {item.season_tags.join(", ") || "-"}</p>
+                      <p className="meta">wear count: {item.wear_count}</p>
+                      <p className="meta">
+                        price: {item.purchase_price != null ? `${item.purchase_price.toLocaleString()} JPY` : "-"}
+                      </p>
+                    </div>
                   </article>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </section>
         </div>
       </section>
+      )}
     </main>
   );
 }

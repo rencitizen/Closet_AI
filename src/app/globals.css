@@ -41,6 +41,26 @@ a {
   padding: 32px 20px 72px;
 }
 
+.auth-shell {
+  min-height: calc(100vh - 64px);
+  display: grid;
+  place-items: center;
+}
+
+.auth-panel {
+  width: min(920px, 100%);
+  padding: 28px;
+}
+
+.auth-header {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-columns {
+  margin-top: 22px;
+}
+
 .workspace-grid {
   display: grid;
   gap: 24px;
@@ -316,6 +336,46 @@ a {
   margin-top: 18px;
 }
 
+.visual-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 22px;
+}
+
+.visual-card {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(216, 203, 185, 0.9);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.visual-card-media {
+  aspect-ratio: 4 / 5;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(235, 221, 204, 0.75));
+}
+
+.visual-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.visual-card-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.visual-card-body {
+  padding: 16px;
+}
+
 .item-notes-field {
   grid-column: span 2;
 }
@@ -389,7 +449,8 @@ a {
   .feature-grid,
   .two-column,
   .item-form-grid,
-  .item-grid {
+  .item-grid,
+  .visual-grid {
     grid-template-columns: 1fr;
   }
 

@@ -106,6 +106,19 @@ export async function POST(request: NextRequest) {
       return internalServerError("Failed to create item", error);
     }
 
+    if (data?.id && input.primary_image_url) {
+      const imageInsert = await supabase.from("clothing_item_images").insert({
+        item_id: data.id,
+        image_url: input.primary_image_url,
+        sort_order: 0,
+        is_primary: true,
+      });
+
+      if (imageInsert.error) {
+        return internalServerError("Item created but image metadata insert failed", imageInsert.error);
+      }
+    }
+
     return created({
       item: data,
     });
