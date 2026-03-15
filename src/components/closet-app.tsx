@@ -37,6 +37,17 @@ type ItemResponse = {
   error?: string;
 };
 
+type ItemAnalysis = {
+  name: string;
+  category: string;
+  brand: string | null;
+  color: string | null;
+  season_tags: string[];
+  status: string;
+  notes: string | null;
+  confidence: number;
+};
+
 const storageKeys = {
   closetId: "closet_ai_closet_id",
 };
@@ -71,6 +82,11 @@ export function ClosetApp() {
   const [itemPrice, setItemPrice] = useState("");
   const [itemSeason, setItemSeason] = useState("all_season");
   const [itemStatus, setItemStatus] = useState("active");
+  const [itemNotes, setItemNotes] = useState("");
+  const [selectedImageName, setSelectedImageName] = useState("");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [imageDataUrl, setImageDataUrl] = useState("");
+  const [analysis, setAnalysis] = useState<ItemAnalysis | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -327,6 +343,7 @@ export function ClosetApp() {
           season_tags: [itemSeason],
           purchase_price: itemPrice ? Number(itemPrice) : undefined,
           status: itemStatus,
+          notes: itemNotes || undefined,
         }),
       });
       const data = (await response.json()) as { error?: string };
@@ -339,10 +356,86 @@ export function ClosetApp() {
       setItemBrand("");
       setItemColor("");
       setItemPrice("");
+      setItemNotes("");
+      setAnalysis(null);
+      setSelectedImageName("");
+      setImagePreviewUrl("");
+      setImageDataUrl("");
       await loadItems(session, selectedClosetId);
       setNotice("アイテムを登録しました。");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "アイテム登録に失敗しました。");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleImageSelected(file: File | null) {
+    if (!file) {
+      setSelectedImageName("");
+      setImagePreviewUrl("");
+      setImageDataUrl("");
+      setAnalysis(null);
+      return;
+    }
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("画像の読み込みに失敗しました。"));
+      reader.readAsDataURL(file);
+    });
+
+    setSelectedImageName(file.name);
+    setImagePreviewUrl(dataUrl);
+    setImageDataUrl(dataUrl);
+    setAnalysis(null);
+  }
+
+  async function handleAnalyzeItem() {
+    if (!session) {
+      setError("先にログインしてください。");
+      return;
+    }
+
+    if (!imageDataUrl) {
+      setError("先に画像を選択してください。");
+      return;
+    }
+
+    try {
+      setBusy("analyze-item");
+      setError(null);
+      setNotice(null);
+
+      const response = await fetch("/api/items/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...buildAuthHeaders(session),
+        },
+        body: JSON.stringify({
+          image_data_url: imageDataUrl,
+          filename: selectedImageName || undefined,
+        }),
+      });
+      const data = (await response.json()) as { analysis?: ItemAnalysis; error?: string };
+
+      if (!response.ok || !data.analysis) {
+        throw new Error(data.error ?? "AI解析に失敗しました。");
+      }
+
+      setAnalysis(data.analysis);
+      setItemName((current) => (current ? current : data.analysis!.name));
+      setItemCategory(data.analysis.category);
+      setItemBrand(data.analysis.brand ?? "");
+      setItemColor(data.analysis.color ?? "");
+      setItemSeason(data.analysis.season_tags[0] ?? "all_season");
+      setItemStatus(data.analysis.status);
+      setItemNotes(data.analysis.notes ?? "");
+      setNotice("AIの候補をフォームに反映しました。必要に応じて修正して保存してください。");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "AI解析に失敗しました。");
     } finally {
       setBusy(null);
     }
@@ -502,6 +595,55 @@ export function ClosetApp() {
               <span className="meta">{selectedCloset ? `対象: ${selectedCloset.name}` : "クローゼット未選択"}</span>
             </div>
 
+            <div className="two-column">
+              <section className="feature">
+                <h3>AI 解析</h3>
+                <p>画像からカテゴリ、色、ブランド候補、季節、メモを推定して入力補助します。</p>
+                <label className="field">
+                  <span>画像を選択</span>
+                  <input
+                    accept="image/*"
+                    type="file"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      void handleImageSelected(file);
+                    }}
+                  />
+                </label>
+                {selectedImageName ? <p className="meta">選択中: {selectedImageName}</p> : null}
+                {imagePreviewUrl ? <img alt="選択した衣類画像" className="analysis-preview" src={imagePreviewUrl} /> : null}
+                <div className="actions">
+                  <button
+                    className="button"
+                    disabled={!session || !imageDataUrl || busy === "analyze-item"}
+                    onClick={handleAnalyzeItem}
+                    type="button"
+                  >
+                    {busy === "analyze-item" ? "解析中..." : "AIで解析"}
+                  </button>
+                </div>
+                {analysis ? (
+                  <div className="analysis-result">
+                    <strong>AI候補</strong>
+                    <p className="meta">name: {analysis.name}</p>
+                    <p className="meta">category: {analysis.category}</p>
+                    <p className="meta">brand: {analysis.brand ?? "-"}</p>
+                    <p className="meta">color: {analysis.color ?? "-"}</p>
+                    <p className="meta">season: {analysis.season_tags.join(", ") || "-"}</p>
+                    <p className="meta">confidence: {analysis.confidence}</p>
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="feature">
+                <h3>登録の流れ</h3>
+                <p>1. 画像を選択</p>
+                <p>2. AIで候補生成</p>
+                <p>3. 内容を確認・修正</p>
+                <p>4. アイテムを保存</p>
+              </section>
+            </div>
+
             <form className="item-form-grid" onSubmit={handleCreateItem}>
               <label className="field">
                 <span>名前</span>
@@ -548,6 +690,10 @@ export function ClosetApp() {
                   <option value="in_laundry">in_laundry</option>
                   <option value="in_cleaning">in_cleaning</option>
                 </select>
+              </label>
+              <label className="field item-notes-field">
+                <span>メモ</span>
+                <input value={itemNotes} onChange={(event) => setItemNotes(event.target.value)} />
               </label>
               <div className="field action-cell">
                 <span>&nbsp;</span>

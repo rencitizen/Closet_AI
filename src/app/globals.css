@@ -220,6 +220,10 @@ a {
   border: 1px solid rgba(216, 203, 185, 0.9);
 }
 
+.feature h3 {
+  margin-top: 0;
+}
+
 .feature p,
 .list li,
 .meta {
@@ -271,6 +275,13 @@ a {
   font: inherit;
 }
 
+.field input[type="file"] {
+  padding: 8px 0;
+  background: transparent;
+  border: 0;
+  min-height: auto;
+}
+
 .select-card {
   display: grid;
   gap: 6px;
@@ -305,8 +316,30 @@ a {
   margin-top: 18px;
 }
 
+.item-notes-field {
+  grid-column: span 2;
+}
+
 .empty-state {
   margin-top: 18px;
+}
+
+.analysis-preview {
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 20px;
+  border: 1px solid rgba(216, 203, 185, 0.9);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.analysis-result {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(216, 203, 185, 0.9);
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .item-card {
@@ -358,6 +391,10 @@ a {
   .item-form-grid,
   .item-grid {
     grid-template-columns: 1fr;
+  }
+
+  .item-notes-field {
+    grid-column: span 1;
   }
 
   .sidebar {

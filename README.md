@@ -6,6 +6,8 @@ Closet AI is a Next.js 15 project for CLOSET_OS. It currently includes:
 - Supabase initial migration in `supabase/migrations/00001_initial_schema.sql`
 - Zod request validation in `src/lib/validators/closet.ts`
 - API routes backed by Supabase for closets, items, outfits, wear logs, and care logs
+- email/password auth with Supabase Auth
+- AI-assisted item analysis from an uploaded image
 
 ## Run locally
 
@@ -18,12 +20,10 @@ Current API routes expect:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-
-Until auth is wired, mutation and scoped list routes use `x-closet-id` to choose the active closet.
+- `OPENAI_API_KEY`
 
 ## Current gaps
 
-- frontend CRUD screens are still minimal
-- auth is not wired yet
+- frontend CRUD beyond auth, closets, and basic items is still minimal
 - only starter RLS exists in the initial migration
 - there are no automated tests yet
