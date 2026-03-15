@@ -4,12 +4,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Closet AI",
-  description: "Closet inventory, outfits, wear logs, and care workflows.",
+  description: "クローゼット管理、コーデ記録、着用ログ、ケア管理を一体化したCLOSET_OS。",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <body>{children}</body>
     </html>
   );

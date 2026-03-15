@@ -1,17 +1,17 @@
 const apiCards = [
   {
-    title: "Closet inventory",
-    body: "Structured item registration with categories, seasons, purchase data, and lifecycle state.",
+    title: "クローゼット台帳",
+    body: "カテゴリ、季節、購入情報、状態まで含めて服を構造化して管理します。",
     href: "/api/items",
   },
   {
-    title: "Outfit builder",
-    body: "Create reusable outfits from existing items and store season and occasion intent.",
+    title: "コーデ管理",
+    body: "登録済みアイテムを組み合わせて、再利用できるコーデを保存します。",
     href: "/api/outfits",
   },
   {
-    title: "Wear and care logs",
-    body: "Track what was worn, what needs washing, and when items return to active rotation.",
+    title: "着用・ケア記録",
+    body: "いつ着たか、いつ洗ったか、いつ通常運用に戻したかを追跡します。",
     href: "/api/wear-logs",
   },
 ];
@@ -21,51 +21,51 @@ export default function HomePage() {
     <main className="shell">
       <section className="hero">
         <div className="panel hero-copy">
-          <span className="eyebrow">Closet Operating System</span>
+          <span className="eyebrow">クローゼットOS</span>
           <h1>Closet AI</h1>
           <p>
-            A mobile-first wardrobe system built around real item inventory, outfit reuse,
-            wear logging, and garment care. The current build includes schema design,
-            request validation, and API scaffolding ready for Supabase persistence.
+            実在する服の在庫管理を中心に、コーデ再利用、着用ログ、ケア管理までを
+            一つの流れで扱うモバイルファーストなクローゼット管理アプリです。
+            現在は Supabase を前提に、スキーマ設計、入力バリデーション、API の土台まで実装しています。
           </p>
           <div className="actions">
             <a className="button primary" href="/api/items">
-              Open items API
+              Items API を開く
             </a>
             <a className="button" href="https://supabase.com/docs">
-              Supabase docs
+              Supabase ドキュメント
             </a>
           </div>
         </div>
 
         <aside className="panel hero-card">
           <div className="kicker">
-            <h2>MVP status</h2>
-            <span className="meta">March 15, 2026</span>
+            <h2>MVP 進捗</h2>
+            <span className="meta">2026年3月15日</span>
           </div>
           <div className="stat-grid">
             <div className="stat">
               <strong>14</strong>
-              <span>core tables defined</span>
+              <span>主要テーブル定義済み</span>
             </div>
             <div className="stat">
               <strong>6</strong>
-              <span>API surfaces scaffolded</span>
+              <span>API エンドポイント実装済み</span>
             </div>
             <div className="stat">
               <strong>1</strong>
-              <span>initial migration prepared</span>
+              <span>初期 migration 作成済み</span>
             </div>
             <div className="stat">
               <strong>Next 15</strong>
-              <span>runtime target</span>
+              <span>採用ランタイム</span>
             </div>
           </div>
         </aside>
       </section>
 
       <section className="panel section">
-        <h2>Build Surfaces</h2>
+        <h2>現在の実装範囲</h2>
         <div className="feature-grid">
           {apiCards.map((card) => (
             <article className="feature" key={card.title}>
@@ -80,12 +80,12 @@ export default function HomePage() {
       </section>
 
       <section className="panel section">
-        <h2>Next Implementation Steps</h2>
+        <h2>次に進める実装</h2>
         <ul className="list">
-          <li>Initialize Supabase project credentials and storage buckets.</li>
-          <li>Attach authenticated server clients to the route handlers.</li>
-          <li>Persist item, outfit, wear log, and care log records with RLS-safe queries.</li>
-          <li>Generate dashboard queries for underused items and care queue status.</li>
+          <li>Supabase の本番接続情報と Storage バケットを整備する。</li>
+          <li>認証済みユーザーと closet の紐付けを実装する。</li>
+          <li>items、outfits、wear logs、care logs の永続化を安定化する。</li>
+          <li>未着用アイテムやケア待ち件数を返すダッシュボード集計を追加する。</li>
         </ul>
       </section>
     </main>
