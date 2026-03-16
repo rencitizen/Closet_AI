@@ -85,6 +85,51 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return internalServerError("Failed to update item", error);
     }
 
+    if (input.primary_image_url) {
+      const resetPrimary = await supabase
+        .from("clothing_item_images")
+        .update({ is_primary: false })
+        .eq("item_id", id)
+        .eq("is_primary", true);
+
+      if (resetPrimary.error) {
+        return internalServerError("Item updated but failed to reset previous primary image", resetPrimary.error);
+      }
+
+      const existingImage = await supabase
+        .from("clothing_item_images")
+        .select("id")
+        .eq("item_id", id)
+        .eq("image_url", input.primary_image_url)
+        .maybeSingle();
+
+      if (existingImage.error) {
+        return internalServerError("Item updated but failed to inspect replacement image metadata", existingImage.error);
+      }
+
+      if (existingImage.data?.id) {
+        const markPrimary = await supabase
+          .from("clothing_item_images")
+          .update({ is_primary: true })
+          .eq("id", existingImage.data.id);
+
+        if (markPrimary.error) {
+          return internalServerError("Item updated but failed to mark replacement image as primary", markPrimary.error);
+        }
+      } else {
+        const imageInsert = await supabase.from("clothing_item_images").insert({
+          item_id: id,
+          image_url: input.primary_image_url,
+          sort_order: 0,
+          is_primary: true,
+        });
+
+        if (imageInsert.error) {
+          return internalServerError("Item updated but failed to save replacement image metadata", imageInsert.error);
+        }
+      }
+    }
+
     return ok({
       item_id: id,
       item: data,

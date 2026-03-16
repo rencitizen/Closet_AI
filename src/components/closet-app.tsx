@@ -260,6 +260,9 @@ export function ClosetApp() {
   const [careNotes, setCareNotes] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [itemEditForm, setItemEditForm] = useState<ItemFormState>(initialItemForm);
+  const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
+  const [editSelectedImageDataUrl, setEditSelectedImageDataUrl] = useState<string | null>(null);
+  const [editImagePreviewUrl, setEditImagePreviewUrl] = useState<string | null>(null);
   const [disposalDate, setDisposalDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [disposalType, setDisposalType] = useState("sold");
   const [disposalReason, setDisposalReason] = useState("");
@@ -373,6 +376,9 @@ export function ClosetApp() {
     if (!session || !selectedItemId) {
       setSelectedItemDetail(null);
       setEditMode(false);
+      setEditSelectedFile(null);
+      setEditSelectedImageDataUrl(null);
+      setEditImagePreviewUrl(null);
       return;
     }
 
@@ -512,6 +518,9 @@ export function ClosetApp() {
         notes: payload.item.notes ?? "",
         seasonTags: payload.item.season_tags ?? [],
       });
+      setEditSelectedFile(null);
+      setEditSelectedImageDataUrl(null);
+      setEditImagePreviewUrl(payload.item.primary_image_url ?? null);
     } catch (error) {
       setScreenError(error instanceof Error ? error.message : "Failed to fetch item detail");
     } finally {
@@ -672,6 +681,20 @@ export function ClosetApp() {
     setSelectedImageDataUrl(dataUrl);
   }
 
+  async function handleEditFileChange(file: File | null) {
+    setEditSelectedFile(file);
+
+    if (!file) {
+      setEditSelectedImageDataUrl(null);
+      setEditImagePreviewUrl(selectedItemDetail?.primary_image_url ?? null);
+      return;
+    }
+
+    const dataUrl = await readFileAsDataUrl(file);
+    setEditSelectedImageDataUrl(dataUrl);
+    setEditImagePreviewUrl(dataUrl);
+  }
+
   async function uploadItemImage() {
     if (!selectedImageDataUrl || !selectedFile) {
       return null;
@@ -694,6 +717,36 @@ export function ClosetApp() {
 
       if (!response.ok || !payload.public_url) {
         throw new Error(payload.error ?? "画像アップロードに失敗しました");
+      }
+
+      return payload.public_url;
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function uploadReplacementImage() {
+    if (!editSelectedImageDataUrl || !editSelectedFile) {
+      return null;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const response = await authorizedFetch("/api/items/upload-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image_data_url: editSelectedImageDataUrl,
+          filename: editSelectedFile.name,
+        }),
+      });
+      const payload = (await response.json()) as { public_url?: string; error?: string };
+
+      if (!response.ok || !payload.public_url) {
+        throw new Error(payload.error ?? "画像差し替えアップロードに失敗しました");
       }
 
       return payload.public_url;
@@ -944,6 +997,12 @@ export function ClosetApp() {
     setScreenMessage(null);
 
     try {
+      let replacementImageUrl: string | null = null;
+
+      if (editSelectedFile && editSelectedImageDataUrl) {
+        replacementImageUrl = await uploadReplacementImage();
+      }
+
       const response = await authorizedFetch(`/api/items/${selectedItemId}`, {
         method: "PATCH",
         headers: {
@@ -958,6 +1017,7 @@ export function ClosetApp() {
           season_tags: itemEditForm.seasonTags,
           notes: itemEditForm.notes || undefined,
           purchase_price: itemEditForm.purchasePrice ? Number(itemEditForm.purchasePrice) : undefined,
+          primary_image_url: replacementImageUrl ?? undefined,
         }),
       });
       const payload = (await response.json()) as { item?: Item; error?: string };
@@ -969,6 +1029,8 @@ export function ClosetApp() {
       setItems((current) => current.map((item) => (item.id === payload.item?.id ? (payload.item as Item) : item)));
       await loadItemDetail(selectedItemId);
       setEditMode(false);
+      setEditSelectedFile(null);
+      setEditSelectedImageDataUrl(null);
       setScreenMessage("アイテムを更新しました。");
     } catch (error) {
       setScreenError(error instanceof Error ? error.message : "アイテム更新に失敗しました");
@@ -1764,6 +1826,20 @@ export function ClosetApp() {
 
                     {editMode ? (
                       <form className="stack-form" onSubmit={handleUpdateItem}>
+                        <label className="field">
+                          <span>差し替え画像</span>
+                          <input
+                            accept="image/*"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] ?? null;
+                              void handleEditFileChange(file);
+                            }}
+                            type="file"
+                          />
+                        </label>
+                        {editImagePreviewUrl ? (
+                          <img alt="replacement preview" className="analysis-preview" src={editImagePreviewUrl} />
+                        ) : null}
                         <label className="field">
                           <span>名前</span>
                           <input
