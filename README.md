@@ -24,6 +24,6 @@ Current API routes expect:
 
 ## Current gaps
 
-- frontend CRUD beyond auth, closets, and basic items is still minimal
-- only starter RLS exists in the initial migration
-- there are no automated tests yet
+- no automated tests yet
+- tags, locations, and saved filters have backend routes but no dedicated frontend UI yet
+- the main app is still a single-page workspace and has not been split into dedicated routes
