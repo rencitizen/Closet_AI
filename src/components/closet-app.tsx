@@ -339,10 +339,11 @@ export function ClosetApp() {
       items: items.filter((item) => item.category === category),
     }))
     .filter((group) => group.items.length > 0);
-  const currentRoute = pathname === "/" ? "/dashboard" : pathname;
+  const currentRoute = pathname === "/" ? "/closets" : pathname;
+  const visibleRoute = ["/closets", "/items", "/outfits"].includes(currentRoute) ? currentRoute : "/closets";
 
   function isRoute(route: string) {
-    return currentRoute === route;
+    return visibleRoute === route;
   }
 
   function navClassName(route: string) {
@@ -1421,29 +1422,12 @@ export function ClosetApp() {
           </div>
 
           <nav className="sidebar-nav">
-            <button className={navClassName("/dashboard")} onClick={() => router.push("/dashboard")} type="button">ダッシュボード</button>
             <button className={navClassName("/closets")} onClick={() => router.push("/closets")} type="button">クローゼット</button>
             <button className={navClassName("/items")} onClick={() => router.push("/items")} type="button">アイテム管理</button>
             <button className={navClassName("/outfits")} onClick={() => router.push("/outfits")} type="button">コーデ作成</button>
-            <button className={navClassName("/wear-log")} onClick={() => router.push("/wear-log")} type="button">着用ログ</button>
-            <button className={navClassName("/care")} onClick={() => router.push("/care")} type="button">ケア管理</button>
-            <button className={navClassName("/analytics")} onClick={() => router.push("/analytics")} type="button">分析</button>
           </nav>
 
-          <div className="sidebar-stats">
-            <div className="stat">
-              <strong>{closets.length}</strong>
-              <span>クローゼット</span>
-            </div>
-            <div className="stat">
-              <strong>{items.length}</strong>
-              <span>アイテム</span>
-            </div>
-            <div className="stat">
-              <strong>{outfits.length}</strong>
-              <span>コーデ</span>
-            </div>
-          </div>
+          <p className="meta">必要な機能だけを表示しています。</p>
 
           <button className="button" onClick={handleSignOut} type="button">
             ログアウト
@@ -1453,62 +1437,17 @@ export function ClosetApp() {
         <div className="workspace-main">
           <section className="hero">
             <article className="panel hero-copy">
-              <span className="eyebrow">Graphic Closet</span>
-              <h1>服画像を集めて、並べて、保存する。</h1>
+              <span className="eyebrow">{isRoute("/closets") ? "Closet" : isRoute("/items") ? "Items" : "Outfits"}</span>
+              <h1>{isRoute("/closets") ? "カテゴリ別のクローゼット" : isRoute("/items") ? "アイテムを追加" : "コーデを作成"}</h1>
               <p>
-                先に服画像を登録し、その後にトップス、ボトムス、シューズ、バッグを服だけのボードに配置してコーデを作ります。
+                {isRoute("/closets")
+                  ? "登録済みの服をカテゴリごとに見ます。"
+                  : isRoute("/items")
+                    ? "服画像、カテゴリ、色、価格をシンプルに追加します。"
+                    : "クローゼットの服を見ながら、服だけでコーデを組みます。"}
               </p>
             </article>
-
-            <article className="panel hero-card">
-              <h2>現在の状況</h2>
-              <div className="stat-grid">
-                <div className="stat">
-                  <strong>{selectedCloset?.name ?? "未選択"}</strong>
-                  <span>選択中のクローゼット</span>
-                </div>
-                <div className="stat">
-                  <strong>{selectedOutfitItemIds.length}</strong>
-                  <span>コーデ候補に追加中</span>
-                </div>
-                <div className="stat">
-                  <strong>{items.filter((item) => item.primary_image_url).length}</strong>
-                  <span>画像付きアイテム</span>
-                </div>
-                <div className="stat">
-                  <strong>{outfits.length}</strong>
-                  <span>保存済みコーデ</span>
-                </div>
-              </div>
-            </article>
           </section>
-
-          {isRoute("/dashboard") ? (
-          <section className="panel section" id="dashboard">
-            <div className="kicker">
-              <h2>ダッシュボード</h2>
-              <span className="meta">今のクローゼット状況を一目で確認します。</span>
-            </div>
-            <div className="stat-grid">
-              <div className="stat">
-                <strong>{activeItems.length}</strong>
-                <span>すぐ着られる服</span>
-              </div>
-              <div className="stat">
-                <strong>{careQueuedItems.length}</strong>
-                <span>ケア中の服</span>
-              </div>
-              <div className="stat">
-                <strong>{unwornItems.length}</strong>
-                <span>未着用アイテム</span>
-              </div>
-              <div className="stat">
-                <strong>{formatCurrency(totalSpent)}</strong>
-                <span>合計購入額</span>
-              </div>
-            </div>
-          </section>
-          ) : null}
 
           {screenMessage ? (
             <section className="panel section notice-panel">
@@ -1568,141 +1507,29 @@ export function ClosetApp() {
           ) : null}
 
           {isRoute("/closets") ? (
-          <section className="panel section" id="filters">
+          <section className="panel section" id="gallery">
             <div className="kicker">
-              <h2>検索と保存フィルタ</h2>
-              <span className="meta">カテゴリ、状態、色で絞り込み、条件を保存できます。</span>
+              <h2>カテゴリ別一覧</h2>
+              <span className="meta">登録した服をカテゴリごとに見ます。</span>
             </div>
-            <div className="two-column">
-              <div className="stack-form">
-                <label className="field">
-                  <span>カテゴリ</span>
-                  <select onChange={(event) => setFilterCategory(event.target.value)} value={filterCategory}>
-                    <option value="">すべて</option>
-                    {categoryOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>状態</span>
-                  <select onChange={(event) => setFilterStatus(event.target.value)} value={filterStatus}>
-                    <option value="">すべて</option>
-                    {statusOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>色</span>
-                  <select onChange={(event) => setFilterColor(event.target.value)} value={filterColor}>
-                    <option value="">すべて</option>
-                    {colorOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="actions compact-actions">
-                  <button className="button" onClick={() => {
-                    setFilterCategory("");
-                    setFilterStatus("");
-                    setFilterColor("");
-                  }} type="button">
-                    クリア
-                  </button>
-                </div>
-              </div>
 
-              <div className="stack-form">
-                <form className="stack-form" onSubmit={handleCreateSavedFilter}>
-                  <label className="field">
-                    <span>保存フィルタ名</span>
-                    <input onChange={(event) => setSavedFilterName(event.target.value)} value={savedFilterName} />
-                  </label>
-                  <button className="button primary" type="submit">
-                    条件を保存
-                  </button>
-                </form>
-
-                <div className="saved-outfits">
-                  {savedFilters.map((savedFilter) => (
-                    <button className="saved-outfit-card" key={savedFilter.id} onClick={() => applySavedFilter(savedFilter)} type="button">
-                      <strong>{savedFilter.name}</strong>
-                    </button>
-                  ))}
-                </div>
+            {groupedFilteredItems.length ? (
+              <div className="category-sections">
+                {groupedFilteredItems.map((group) => (
+                  <section className="category-section" key={group.category}>
+                    <div className="kicker">
+                      <h3>{categoryLabels[group.category] ?? group.category}</h3>
+                      <span className="meta">{group.items.length} items</span>
+                    </div>
+                    <div className="visual-grid">
+                      {group.items.map((item) => renderItemCard(item, { showEdit: true }))}
+                    </div>
+                  </section>
+                ))}
               </div>
-            </div>
-          </section>
-          ) : null}
-
-          {isRoute("/closets") ? (
-          <section className="panel section" id="masters">
-            <div className="kicker">
-              <h2>タグと保管場所</h2>
-              <span className="meta">クローゼット内の補助データを先に整えておけます。</span>
-            </div>
-            <div className="two-column">
-              <div className="stack-form">
-                <form className="stack-form" onSubmit={handleCreateTag}>
-                  <label className="field">
-                    <span>タグ名</span>
-                    <input onChange={(event) => setTagName(event.target.value)} value={tagName} />
-                  </label>
-                  <label className="field">
-                    <span>色</span>
-                    <input onChange={(event) => setTagColor(event.target.value)} value={tagColor} />
-                  </label>
-                  <button className="button primary" type="submit">
-                    タグを追加
-                  </button>
-                </form>
-                <div className="saved-outfits">
-                  {tags.map((tag) => (
-                    <article className="saved-outfit-card" key={tag.id}>
-                      <strong>{tag.name}</strong>
-                      <p className="meta">{tag.color || "color unset"}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div className="stack-form">
-                <form className="stack-form" onSubmit={handleCreateLocation}>
-                  <label className="field">
-                    <span>保管場所名</span>
-                    <input onChange={(event) => setLocationName(event.target.value)} value={locationName} />
-                  </label>
-                  <label className="field">
-                    <span>種別</span>
-                    <select onChange={(event) => setLocationType(event.target.value)} value={locationType}>
-                      <option value="closet">closet</option>
-                      <option value="drawer">drawer</option>
-                      <option value="rack">rack</option>
-                      <option value="box">box</option>
-                      <option value="other">other</option>
-                    </select>
-                  </label>
-                  <button className="button primary" type="submit">
-                    保管場所を追加
-                  </button>
-                </form>
-                <div className="saved-outfits">
-                  {locations.map((location) => (
-                    <article className="saved-outfit-card" key={location.id}>
-                      <strong>{location.name}</strong>
-                      <p className="meta">{location.location_type}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </div>
+            ) : (
+              <div className="analysis-result empty-state">まだアイテムがありません。</div>
+            )}
           </section>
           ) : null}
 
@@ -1859,214 +1686,6 @@ export function ClosetApp() {
           </section>
           ) : null}
 
-          {isRoute("/items") ? (
-          <section className="panel section" id="gallery">
-            <div className="kicker">
-              <h2>アイテム一覧</h2>
-              <span className="meta">コーデに使いたい服を下のカードから選びます。</span>
-            </div>
-
-            {groupedFilteredItems.length ? (
-              <div className="category-sections">
-                {groupedFilteredItems.map((group) => (
-                  <section className="category-section" key={group.category}>
-                    <div className="kicker">
-                      <h3>{categoryLabels[group.category] ?? group.category}</h3>
-                      <span className="meta">{group.items.length} items</span>
-                    </div>
-                    <div className="visual-grid">
-                      {group.items.map((item) => renderItemCard(item, { showEdit: true }))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            ) : (
-              <div className="analysis-result empty-state">条件に合うアイテムがありません。</div>
-            )}
-          </section>
-          ) : null}
-
-          {isRoute("/items") ? (
-          <section className="panel section" id="detail">
-            <div className="kicker">
-              <h2>アイテム詳細</h2>
-              <span className="meta">一覧から 1 件選んで、詳細確認と編集、手放す処理を行います。</span>
-            </div>
-            <div className="two-column">
-              <div className="stack-list">
-                {items.map((item) => (
-                  <button
-                    className={`select-card ${selectedItemId === item.id ? "is-active" : ""}`}
-                    key={item.id}
-                    onClick={() => setSelectedItemId(item.id)}
-                    type="button"
-                  >
-                    <strong>{item.name}</strong>
-                    <span>
-                      {item.category} / {formatCurrency(item.purchase_price)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="stack-form">
-                {isDetailLoading ? (
-                  <div className="analysis-result">読み込み中...</div>
-                ) : selectedItemDetail ? (
-                  <>
-                    <div className="item-card">
-                      {selectedItemDetail.primary_image_url ? (
-                        <img
-                          alt={selectedItemDetail.name}
-                          className="analysis-preview"
-                          src={selectedItemDetail.primary_image_url}
-                        />
-                      ) : null}
-                      <div className="item-card-head">
-                        <strong>{selectedItemDetail.name}</strong>
-                        <span className={statusClassName(selectedItemDetail.status)}>{selectedItemDetail.status}</span>
-                      </div>
-                      <p className="meta">
-                        {selectedItemDetail.category} / {selectedItemDetail.brand || "No brand"} / {selectedItemDetail.color || "No color"}
-                      </p>
-                      <p className="meta">
-                        着用回数 {selectedItemDetail.wear_count} / 最終着用{" "}
-                        {selectedItemDetail.last_worn_at || "未記録"}
-                      </p>
-                    </div>
-
-                    <div className="actions compact-actions">
-                      <button className={`button ${editMode ? "primary" : ""}`} onClick={() => setEditMode((current) => !current)} type="button">
-                        {editMode ? "編集を閉じる" : "編集する"}
-                      </button>
-                    </div>
-
-                    {editMode ? (
-                      <form className="stack-form" onSubmit={handleUpdateItem}>
-                        <label className="field">
-                          <span>差し替え画像</span>
-                          <input
-                            accept="image/*"
-                            onChange={(event) => {
-                              const file = event.target.files?.[0] ?? null;
-                              void handleEditFileChange(file);
-                            }}
-                            type="file"
-                          />
-                        </label>
-                        {editImagePreviewUrl ? (
-                          <img alt="replacement preview" className="analysis-preview" src={editImagePreviewUrl} />
-                        ) : null}
-                        <label className="field">
-                          <span>名前</span>
-                          <input
-                            onChange={(event) => setItemEditForm((current) => ({ ...current, name: event.target.value }))}
-                            value={itemEditForm.name}
-                          />
-                        </label>
-                        <label className="field">
-                          <span>カテゴリ</span>
-                          <select
-                            onChange={(event) => setItemEditForm((current) => ({ ...current, category: event.target.value }))}
-                            value={itemEditForm.category}
-                          >
-                            {categoryOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="field">
-                          <span>ブランド</span>
-                          <input
-                            onChange={(event) => setItemEditForm((current) => ({ ...current, brand: event.target.value }))}
-                            value={itemEditForm.brand}
-                          />
-                        </label>
-                        <label className="field">
-                          <span>色</span>
-                          <select
-                            onChange={(event) => setItemEditForm((current) => ({ ...current, color: event.target.value }))}
-                            value={itemEditForm.color}
-                          >
-                            <option value="">選択してください</option>
-                            {colorOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="field">
-                          <span>状態</span>
-                          <select
-                            onChange={(event) => setItemEditForm((current) => ({ ...current, status: event.target.value }))}
-                            value={itemEditForm.status}
-                          >
-                            {statusOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="field">
-                          <span>価格</span>
-                          <input
-                            inputMode="numeric"
-                            onChange={(event) => setItemEditForm((current) => ({ ...current, purchasePrice: event.target.value }))}
-                            value={itemEditForm.purchasePrice}
-                          />
-                        </label>
-                        <label className="field">
-                          <span>メモ</span>
-                          <input
-                            onChange={(event) => setItemEditForm((current) => ({ ...current, notes: event.target.value }))}
-                            value={itemEditForm.notes}
-                          />
-                        </label>
-                        <button className="button primary" type="submit">
-                          更新する
-                        </button>
-                      </form>
-                    ) : null}
-
-                    <form className="stack-form" onSubmit={handleDisposeItem}>
-                      <h3>手放す</h3>
-                      <label className="field">
-                        <span>日付</span>
-                        <input onChange={(event) => setDisposalDate(event.target.value)} type="date" value={disposalDate} />
-                      </label>
-                      <label className="field">
-                        <span>方法</span>
-                        <select onChange={(event) => setDisposalType(event.target.value)} value={disposalType}>
-                          <option value="sold">sold</option>
-                          <option value="donated">donated</option>
-                          <option value="discarded">discarded</option>
-                          <option value="gifted">gifted</option>
-                        </select>
-                      </label>
-                      <label className="field">
-                        <span>理由</span>
-                        <input onChange={(event) => setDisposalReason(event.target.value)} value={disposalReason} />
-                      </label>
-                      <label className="field">
-                        <span>回収額</span>
-                        <input inputMode="numeric" onChange={(event) => setDisposalAmount(event.target.value)} value={disposalAmount} />
-                      </label>
-                      <button className="button" type="submit">
-                        手放し済みにする
-                      </button>
-                    </form>
-                  </>
-                ) : (
-                  <div className="analysis-result">左側のアイテムを選ぶと詳細が表示されます。</div>
-                )}
-              </div>
-            </div>
-          </section>
-          ) : null}
 
           {isRoute("/outfits") ? (
           <section className="panel section" id="outfits">
