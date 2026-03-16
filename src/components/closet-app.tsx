@@ -1332,80 +1332,50 @@ export function ClosetApp() {
     return (
       <main className="shell auth-shell">
         <section className="panel auth-panel">
-          <div className="auth-header">
-            <span className="eyebrow">Closet AI</span>
-            <h1>服画像を集めて、服だけでコーデを組む。</h1>
-            <p className="hero-text">
-              先にログインしてください。ログイン後にクローゼット作成、アイテム登録、画像ベースのコーデ作成に進めます。
-            </p>
+          <div className="actions compact-actions">
+            <button
+              className={`button ${authMode === "signin" ? "primary" : ""}`}
+              onClick={() => setAuthMode("signin")}
+              type="button"
+            >
+              ログイン
+            </button>
+            <button
+              className={`button ${authMode === "signup" ? "primary" : ""}`}
+              onClick={() => setAuthMode("signup")}
+              type="button"
+            >
+              新規登録
+            </button>
           </div>
 
-          <div className="auth-columns two-column">
-            <section className="panel section hero-section">
-              <h2>できること</h2>
-              <div className="feature-grid">
-                <article className="feature">
-                  <h3>画像で管理</h3>
-                  <p>作成済みの服画像をそのまま登録して、カード一覧で確認できます。</p>
-                </article>
-                <article className="feature">
-                  <h3>服だけでコーデ</h3>
-                  <p>人物なしのボード上に服画像を置いて、見た目のまま保存できます。</p>
-                </article>
-                <article className="feature">
-                  <h3>AI解析は任意</h3>
-                  <p>必要なときだけ属性候補を出して、手入力を少しだけ軽くできます。</p>
-                </article>
-              </div>
-            </section>
+          <form className="stack-form" onSubmit={handleAuthSubmit}>
+            <label className="field">
+              <span>メールアドレス</span>
+              <input
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                type="email"
+                value={email}
+              />
+            </label>
+            <label className="field">
+              <span>パスワード</span>
+              <input
+                autoComplete={authMode === "signup" ? "new-password" : "current-password"}
+                minLength={6}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                value={password}
+              />
+            </label>
+            <button className="button primary" type="submit">
+              {authMode === "signup" ? "アカウントを作成" : "ログインする"}
+            </button>
+          </form>
 
-            <section className="panel section">
-              <div className="actions compact-actions">
-                <button
-                  className={`button ${authMode === "signin" ? "primary" : ""}`}
-                  onClick={() => setAuthMode("signin")}
-                  type="button"
-                >
-                  ログイン
-                </button>
-                <button
-                  className={`button ${authMode === "signup" ? "primary" : ""}`}
-                  onClick={() => setAuthMode("signup")}
-                  type="button"
-                >
-                  新規登録
-                </button>
-              </div>
-
-              <form className="stack-form" onSubmit={handleAuthSubmit}>
-                <label className="field">
-                  <span>メールアドレス</span>
-                  <input
-                    autoComplete="email"
-                    onChange={(event) => setEmail(event.target.value)}
-                    type="email"
-                    value={email}
-                  />
-                </label>
-                <label className="field">
-                  <span>パスワード</span>
-                  <input
-                    autoComplete={authMode === "signup" ? "new-password" : "current-password"}
-                    minLength={6}
-                    onChange={(event) => setPassword(event.target.value)}
-                    type="password"
-                    value={password}
-                  />
-                </label>
-                <button className="button primary" type="submit">
-                  {authMode === "signup" ? "アカウントを作成" : "ログインする"}
-                </button>
-              </form>
-
-              {authMessage ? <div className="analysis-result">{authMessage}</div> : null}
-              {authError ? <div className="analysis-result error-panel">{authError}</div> : null}
-            </section>
-          </div>
+          {authMessage ? <div className="analysis-result">{authMessage}</div> : null}
+          {authError ? <div className="analysis-result error-panel">{authError}</div> : null}
         </section>
       </main>
     );
