@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -125,6 +125,15 @@ type SavedFilter = {
   filter_json: Record<string, unknown>;
 };
 
+type OutfitLayout = Record<
+  string,
+  {
+    top: number;
+    left: number;
+    width: number;
+  }
+>;
+
 const categoryOptions = ["tops", "bottoms", "outer", "shoes", "bag", "accessory", "dress", "other"];
 const seasonOptions = ["spring", "summer", "autumn", "winter", "all_season"];
 const statusOptions = ["active", "stored", "in_laundry", "in_cleaning"];
@@ -200,21 +209,21 @@ function readFileAsDataUrl(file: File) {
 function getOutfitPlacement(category: string) {
   switch (category) {
     case "outer":
-      return { top: "7%", left: "50%", width: "38%", transform: "translateX(-50%)" };
+      return { top: 7, left: 50, width: 38 };
     case "tops":
-      return { top: "24%", left: "50%", width: "34%", transform: "translateX(-50%)" };
+      return { top: 24, left: 50, width: 34 };
     case "dress":
-      return { top: "22%", left: "50%", width: "34%", transform: "translateX(-50%)" };
+      return { top: 22, left: 50, width: 34 };
     case "bottoms":
-      return { top: "47%", left: "50%", width: "31%", transform: "translateX(-50%)" };
+      return { top: 47, left: 50, width: 31 };
     case "shoes":
-      return { top: "77%", left: "50%", width: "28%", transform: "translateX(-50%)" };
+      return { top: 77, left: 50, width: 28 };
     case "bag":
-      return { top: "41%", left: "78%", width: "22%", transform: "translateX(-50%)" };
+      return { top: 41, left: 78, width: 22 };
     case "accessory":
-      return { top: "16%", left: "24%", width: "18%", transform: "translateX(-50%)" };
+      return { top: 16, left: 24, width: 18 };
     default:
-      return { top: "66%", left: "18%", width: "24%", transform: "translateX(-50%)" };
+      return { top: 66, left: 18, width: 24 };
   }
 }
 
@@ -257,6 +266,7 @@ export function ClosetApp() {
   const [analysis, setAnalysis] = useState<ItemAnalysis | null>(null);
 
   const [selectedOutfitItemIds, setSelectedOutfitItemIds] = useState<string[]>([]);
+  const [outfitLayout, setOutfitLayout] = useState<OutfitLayout>({});
   const [outfitName, setOutfitName] = useState("");
   const [outfitNotes, setOutfitNotes] = useState("");
   const [wearDate, setWearDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -292,6 +302,14 @@ export function ClosetApp() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [screenError, setScreenError] = useState<string | null>(null);
   const [screenMessage, setScreenMessage] = useState<string | null>(null);
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{
+    itemId: string;
+    offsetX: number;
+    offsetY: number;
+    pieceWidth: number;
+    pieceHeight: number;
+  } | null>(null);
 
   const selectedCloset = closets.find((closet) => closet.id === selectedClosetId) ?? null;
   const selectedOutfitItems = items.filter((item) => selectedOutfitItemIds.includes(item.id));
@@ -406,6 +424,18 @@ export function ClosetApp() {
 
     void loadItemDetail(selectedItemId);
   }, [session, selectedItemId]);
+
+  useEffect(() => {
+    setOutfitLayout((current) => {
+      const next: OutfitLayout = {};
+
+      selectedOutfitItems.forEach((item) => {
+        next[item.id] = current[item.id] ?? getOutfitPlacement(item.category);
+      });
+
+      return next;
+    });
+  }, [selectedOutfitItems]);
 
   async function authorizedFetch(input: string, init?: RequestInit) {
     if (!session?.access_token) {
@@ -722,6 +752,57 @@ export function ClosetApp() {
         </div>
       </article>
     );
+  }
+
+  function handleOutfitPiecePointerDown(itemId: string, event: ReactPointerEvent<HTMLDivElement>) {
+    const board = boardRef.current;
+
+    if (!board) {
+      return;
+    }
+
+    const pieceRect = event.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      itemId,
+      offsetX: event.clientX - pieceRect.left,
+      offsetY: event.clientY - pieceRect.top,
+      pieceWidth: pieceRect.width,
+      pieceHeight: pieceRect.height,
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleOutfitPiecePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const board = boardRef.current;
+    const drag = dragRef.current;
+
+    if (!board || !drag) {
+      return;
+    }
+
+    const boardRect = board.getBoundingClientRect();
+    const nextLeftPx = event.clientX - boardRect.left - drag.offsetX + drag.pieceWidth / 2;
+    const nextTopPx = event.clientY - boardRect.top - drag.offsetY;
+    const clampedLeft = Math.min(Math.max(nextLeftPx, drag.pieceWidth / 2), boardRect.width - drag.pieceWidth / 2);
+    const clampedTop = Math.min(Math.max(nextTopPx, 0), boardRect.height - drag.pieceHeight);
+
+    setOutfitLayout((current) => ({
+      ...current,
+      [drag.itemId]: {
+        ...(current[drag.itemId] ?? getOutfitPlacement("other")),
+        left: (clampedLeft / boardRect.width) * 100,
+        top: (clampedTop / boardRect.height) * 100,
+      },
+    }));
+  }
+
+  function handleOutfitPiecePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    dragRef.current = null;
   }
 
   async function handleFileChange(file: File | null) {
@@ -1994,17 +2075,30 @@ export function ClosetApp() {
               <span className="meta">人物なしで、服画像だけをキャンバスに置いて保存します。</span>
             </div>
 
-            <div className="outfit-columns">
-              <div className="outfit-board">
-                {selectedOutfitItems.length ? (
-                  selectedOutfitItems.map((item) => {
-                    const placement = getOutfitPlacement(item.category);
+              <div className="outfit-columns">
+                <div className="outfit-board" ref={boardRef}>
+                  {selectedOutfitItems.length ? (
+                    selectedOutfitItems.map((item) => {
+                      const placement = outfitLayout[item.id] ?? getOutfitPlacement(item.category);
 
-                    return (
-                      <div className="outfit-piece" key={item.id} style={placement}>
-                        {item.primary_image_url ? (
-                          <img alt={item.name} className="outfit-piece-image" src={item.primary_image_url} />
-                        ) : (
+                      return (
+                        <div
+                          className="outfit-piece"
+                          key={item.id}
+                          onPointerDown={(event) => handleOutfitPiecePointerDown(item.id, event)}
+                          onPointerMove={handleOutfitPiecePointerMove}
+                          onPointerUp={handleOutfitPiecePointerUp}
+                          onPointerCancel={handleOutfitPiecePointerUp}
+                          style={{
+                            top: `${placement.top}%`,
+                            left: `${placement.left}%`,
+                            width: `${placement.width}%`,
+                            transform: "translateX(-50%)",
+                          }}
+                        >
+                          {item.primary_image_url ? (
+                            <img alt={item.name} className="outfit-piece-image" src={item.primary_image_url} />
+                          ) : (
                           <div className="outfit-piece-fallback">{item.name}</div>
                         )}
                       </div>

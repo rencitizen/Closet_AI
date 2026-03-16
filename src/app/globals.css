@@ -377,7 +377,7 @@ a {
 
 .visual-card-media {
   aspect-ratio: 4 / 5;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(235, 221, 204, 0.75));
+  background: #fff;
 }
 
 .visual-card-image {
@@ -422,9 +422,7 @@ a {
   min-height: 720px;
   border-radius: 28px;
   border: 1px solid rgba(216, 203, 185, 0.95);
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.95), transparent 40%),
-    linear-gradient(180deg, rgba(255, 252, 247, 0.95), rgba(238, 225, 208, 0.9));
+  background: #fff;
   overflow: hidden;
 }
 
@@ -449,6 +447,8 @@ a {
 .outfit-piece {
   position: absolute;
   z-index: 1;
+  cursor: grab;
+  touch-action: none;
 }
 
 .outfit-piece-image {
@@ -457,6 +457,8 @@ a {
   display: block;
   object-fit: contain;
   filter: drop-shadow(0 16px 22px rgba(44, 26, 16, 0.16));
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .outfit-piece-fallback {
@@ -489,7 +491,7 @@ a {
   object-fit: cover;
   border-radius: 20px;
   border: 1px solid rgba(216, 203, 185, 0.9);
-  background: rgba(255, 255, 255, 0.7);
+  background: #fff;
 }
 
 .analysis-result {
