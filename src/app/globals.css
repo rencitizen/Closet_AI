@@ -48,17 +48,8 @@ a {
 }
 
 .auth-panel {
-  width: min(920px, 100%);
-  padding: 28px;
-}
-
-.auth-header {
-  display: grid;
-  gap: 10px;
-}
-
-.auth-columns {
-  margin-top: 22px;
+  width: min(380px, 100%);
+  padding: 20px;
 }
 
 .workspace-grid {
@@ -176,6 +167,11 @@ a {
 
 .compact-actions {
   margin-top: 0;
+}
+
+.auth-panel .actions,
+.auth-panel .stack-form {
+  gap: 10px;
 }
 
 .button {

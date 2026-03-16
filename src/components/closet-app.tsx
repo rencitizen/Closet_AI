@@ -350,6 +350,24 @@ export function ClosetApp() {
     return isRoute(route) ? "is-active" : "";
   }
 
+  function navigate(route: string) {
+    if (typeof window === "undefined") {
+      router.push(route);
+      return;
+    }
+
+    if (window.location.pathname === route) {
+      return;
+    }
+
+    router.push(route);
+    window.setTimeout(() => {
+      if (window.location.pathname !== route) {
+        window.location.assign(route);
+      }
+    }, 180);
+  }
+
   useEffect(() => {
     let mounted = true;
 
@@ -1392,9 +1410,9 @@ export function ClosetApp() {
           </div>
 
           <nav className="sidebar-nav">
-            <button className={navClassName("/closets")} onClick={() => router.push("/closets")} type="button">クローゼット</button>
-            <button className={navClassName("/items")} onClick={() => router.push("/items")} type="button">アイテム管理</button>
-            <button className={navClassName("/outfits")} onClick={() => router.push("/outfits")} type="button">コーデ作成</button>
+            <button className={navClassName("/closets")} onClick={() => navigate("/closets")} type="button">クローゼット</button>
+            <button className={navClassName("/items")} onClick={() => navigate("/items")} type="button">アイテム管理</button>
+            <button className={navClassName("/outfits")} onClick={() => navigate("/outfits")} type="button">コーデ作成</button>
           </nav>
 
           <p className="meta">必要な機能だけを表示しています。</p>
