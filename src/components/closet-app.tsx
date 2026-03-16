@@ -128,6 +128,25 @@ type SavedFilter = {
 const categoryOptions = ["tops", "bottoms", "outer", "shoes", "bag", "accessory", "dress", "other"];
 const seasonOptions = ["spring", "summer", "autumn", "winter", "all_season"];
 const statusOptions = ["active", "stored", "in_laundry", "in_cleaning"];
+const colorOptions = [
+  "black",
+  "white",
+  "gray",
+  "navy",
+  "blue",
+  "beige",
+  "brown",
+  "green",
+  "khaki",
+  "yellow",
+  "orange",
+  "red",
+  "pink",
+  "purple",
+  "silver",
+  "gold",
+  "multicolor",
+];
 
 const initialItemForm: ItemFormState = {
   name: "",
@@ -1368,7 +1387,14 @@ export function ClosetApp() {
                 </label>
                 <label className="field">
                   <span>色</span>
-                  <input onChange={(event) => setFilterColor(event.target.value)} value={filterColor} />
+                  <select onChange={(event) => setFilterColor(event.target.value)} value={filterColor}>
+                    <option value="">すべて</option>
+                    {colorOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <div className="actions compact-actions">
                   <button className="button" onClick={() => {
@@ -1531,10 +1557,17 @@ export function ClosetApp() {
                 </label>
                 <label className="field">
                   <span>色</span>
-                  <input
+                  <select
                     onChange={(event) => setItemForm((current) => ({ ...current, color: event.target.value }))}
                     value={itemForm.color}
-                  />
+                  >
+                    <option value="">選択してください</option>
+                    {colorOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="field">
                   <span>価格</span>
@@ -1746,10 +1779,17 @@ export function ClosetApp() {
                         </label>
                         <label className="field">
                           <span>色</span>
-                          <input
+                          <select
                             onChange={(event) => setItemEditForm((current) => ({ ...current, color: event.target.value }))}
                             value={itemEditForm.color}
-                          />
+                          >
+                            <option value="">選択してください</option>
+                            {colorOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
                         </label>
                         <label className="field">
                           <span>状態</span>

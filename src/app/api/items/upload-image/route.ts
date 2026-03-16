@@ -32,6 +32,33 @@ function guessExtension(mimeType: string) {
   return "jpg";
 }
 
+async function ensureBucketExists(bucket: string) {
+  const supabase = getSupabaseServerClient();
+  const existing = await supabase.storage.getBucket(bucket);
+
+  if (!existing.error) {
+    return;
+  }
+
+  const shouldCreate =
+    existing.error.message?.toLowerCase().includes("not found") ||
+    existing.error.message?.toLowerCase().includes("does not exist");
+
+  if (!shouldCreate) {
+    throw existing.error;
+  }
+
+  const created = await supabase.storage.createBucket(bucket, {
+    public: true,
+    fileSizeLimit: 10 * 1024 * 1024,
+    allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
+  });
+
+  if (created.error) {
+    throw created.error;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { user, error: authError } = await requireAuthenticatedUser(request);
@@ -55,13 +82,18 @@ export async function POST(request: NextRequest) {
     const bytes = Buffer.from(base64, "base64");
     const supabase = getSupabaseServerClient();
 
+    await ensureBucketExists(bucket);
+
     const upload = await supabase.storage.from(bucket).upload(objectPath, bytes, {
       contentType: mimeType,
       upsert: false,
     });
 
     if (upload.error) {
-      return internalServerError("Failed to upload image to Supabase Storage", upload.error);
+      return internalServerError("Failed to upload image to Supabase Storage bucket", {
+        bucket,
+        message: upload.error.message,
+      });
     }
 
     const publicUrl = supabase.storage.from(bucket).getPublicUrl(objectPath).data.publicUrl;
@@ -76,6 +108,8 @@ export async function POST(request: NextRequest) {
       return fromZodError(error);
     }
 
-    return internalServerError("Failed to upload item image", error);
+    return internalServerError("Failed to upload item image", {
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 }
