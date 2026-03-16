@@ -353,6 +353,16 @@ a {
   margin-top: 22px;
 }
 
+.category-sections {
+  display: grid;
+  gap: 28px;
+}
+
+.category-section {
+  display: grid;
+  gap: 12px;
+}
+
 .visual-card {
   overflow: hidden;
   border-radius: 22px;

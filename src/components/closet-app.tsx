@@ -147,6 +147,16 @@ const colorOptions = [
   "gold",
   "multicolor",
 ];
+const categoryLabels: Record<string, string> = {
+  tops: "トップス",
+  bottoms: "ボトムス",
+  outer: "アウター",
+  shoes: "シューズ",
+  bag: "バッグ",
+  accessory: "アクセサリー",
+  dress: "ドレス",
+  other: "その他",
+};
 
 const initialItemForm: ItemFormState = {
   name: "",
@@ -299,6 +309,18 @@ export function ClosetApp() {
     if (filterColor && !(item.color ?? "").toLowerCase().includes(filterColor.toLowerCase())) return false;
     return true;
   });
+  const groupedFilteredItems = categoryOptions
+    .map((category) => ({
+      category,
+      items: filteredItems.filter((item) => item.category === category),
+    }))
+    .filter((group) => group.items.length > 0);
+  const groupedClosetItems = categoryOptions
+    .map((category) => ({
+      category,
+      items: items.filter((item) => item.category === category),
+    }))
+    .filter((group) => group.items.length > 0);
   const currentRoute = pathname === "/" ? "/dashboard" : pathname;
 
   function isRoute(route: string) {
@@ -664,6 +686,42 @@ export function ClosetApp() {
         document.getElementById("detail")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 0);
     }
+  }
+
+  function renderItemCard(item: Item, options?: { showEdit?: boolean }) {
+    const isSelected = selectedOutfitItemIds.includes(item.id);
+
+    return (
+      <article className={`visual-card ${isSelected ? "is-selected" : ""}`} key={item.id}>
+        <div className="visual-card-media">
+          {item.primary_image_url ? (
+            <img alt={item.name} className="visual-card-image" src={item.primary_image_url} />
+          ) : (
+            <div className="visual-card-fallback">{item.category}</div>
+          )}
+        </div>
+        <div className="visual-card-body">
+          <div className="item-card-head">
+            <strong>{item.name}</strong>
+            <span className={statusClassName(item.status)}>{item.status}</span>
+          </div>
+          <p className="meta">
+            {item.brand || "No brand"} / {item.color || "No color"}
+          </p>
+          <p className="meta">{formatCurrency(item.purchase_price)}</p>
+          <div className="actions compact-actions">
+            {options?.showEdit ? (
+              <button className="button" onClick={() => openItemEditor(item.id)} type="button">
+                編集
+              </button>
+            ) : null}
+            <button className={`button ${isSelected ? "primary" : ""}`} onClick={() => toggleOutfitItem(item.id)} type="button">
+              {isSelected ? "コーデから外す" : "コーデに追加"}
+            </button>
+          </div>
+        </div>
+      </article>
+    );
   }
 
   async function handleFileChange(file: File | null) {
@@ -1727,41 +1785,19 @@ export function ClosetApp() {
               <span className="meta">コーデに使いたい服を下のカードから選びます。</span>
             </div>
 
-            {filteredItems.length ? (
-              <div className="visual-grid">
-                {filteredItems.map((item) => {
-                  const isSelected = selectedOutfitItemIds.includes(item.id);
-
-                  return (
-                    <article className={`visual-card ${isSelected ? "is-selected" : ""}`} key={item.id}>
-                      <div className="visual-card-media">
-                        {item.primary_image_url ? (
-                          <img alt={item.name} className="visual-card-image" src={item.primary_image_url} />
-                        ) : (
-                          <div className="visual-card-fallback">{item.category}</div>
-                        )}
-                      </div>
-                      <div className="visual-card-body">
-                        <div className="item-card-head">
-                          <strong>{item.name}</strong>
-                          <span className={statusClassName(item.status)}>{item.status}</span>
-                        </div>
-                        <p className="meta">
-                          {item.brand || "No brand"} / {item.color || "No color"}
-                        </p>
-                        <p className="meta">{formatCurrency(item.purchase_price)}</p>
-                        <div className="actions compact-actions">
-                          <button className="button" onClick={() => openItemEditor(item.id)} type="button">
-                            編集
-                          </button>
-                          <button className={`button ${isSelected ? "primary" : ""}`} onClick={() => toggleOutfitItem(item.id)} type="button">
-                            {isSelected ? "コーデから外す" : "コーデに追加"}
-                          </button>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
+            {groupedFilteredItems.length ? (
+              <div className="category-sections">
+                {groupedFilteredItems.map((group) => (
+                  <section className="category-section" key={group.category}>
+                    <div className="kicker">
+                      <h3>{categoryLabels[group.category] ?? group.category}</h3>
+                      <span className="meta">{group.items.length} items</span>
+                    </div>
+                    <div className="visual-grid">
+                      {group.items.map((item) => renderItemCard(item, { showEdit: true }))}
+                    </div>
+                  </section>
+                ))}
               </div>
             ) : (
               <div className="analysis-result empty-state">条件に合うアイテムがありません。</div>
@@ -2021,6 +2057,20 @@ export function ClosetApp() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div className="category-sections">
+              {groupedClosetItems.map((group) => (
+                <section className="category-section" key={`outfit-${group.category}`}>
+                  <div className="kicker">
+                    <h3>{categoryLabels[group.category] ?? group.category}</h3>
+                    <span className="meta">クローゼット内 {group.items.length} 点</span>
+                  </div>
+                  <div className="visual-grid">
+                    {group.items.map((item) => renderItemCard(item))}
+                  </div>
+                </section>
+              ))}
             </div>
           </section>
           ) : null}
