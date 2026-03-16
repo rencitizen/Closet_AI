@@ -646,6 +646,17 @@ export function ClosetApp() {
     );
   }
 
+  function openItemEditor(itemId: string) {
+    setSelectedItemId(itemId);
+    setEditMode(true);
+
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        document.getElementById("detail")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 0);
+    }
+  }
+
   async function handleFileChange(file: File | null) {
     setSelectedFile(file);
     setAnalysis(null);
@@ -1678,6 +1689,9 @@ export function ClosetApp() {
                         </p>
                         <p className="meta">{formatCurrency(item.purchase_price)}</p>
                         <div className="actions compact-actions">
+                          <button className="button" onClick={() => openItemEditor(item.id)} type="button">
+                            編集
+                          </button>
                           <button className={`button ${isSelected ? "primary" : ""}`} onClick={() => toggleOutfitItem(item.id)} type="button">
                             {isSelected ? "コーデから外す" : "コーデに追加"}
                           </button>
