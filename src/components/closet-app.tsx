@@ -262,6 +262,7 @@ export function ClosetApp() {
   const [itemForm, setItemForm] = useState<ItemFormState>(initialItemForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedImageDataUrl, setSelectedImageDataUrl] = useState<string | null>(null);
+  const [generatedImageFilename, setGeneratedImageFilename] = useState<string | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<ItemAnalysis | null>(null);
 
@@ -298,6 +299,7 @@ export function ClosetApp() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [screenError, setScreenError] = useState<string | null>(null);
@@ -826,6 +828,7 @@ export function ClosetApp() {
 
   async function handleFileChange(file: File | null) {
     setSelectedFile(file);
+    setGeneratedImageFilename(null);
     setAnalysis(null);
 
     if (!file) {
@@ -837,6 +840,49 @@ export function ClosetApp() {
     const dataUrl = await readFileAsDataUrl(file);
     setImagePreviewUrl(dataUrl);
     setSelectedImageDataUrl(dataUrl);
+  }
+
+  async function handleGenerateImage() {
+    setScreenError(null);
+    setScreenMessage(null);
+
+    if (!itemForm.name.trim() || !itemForm.category.trim()) {
+      setScreenError("画像生成の前に名前とカテゴリを入れてください。");
+      return;
+    }
+
+    setIsGeneratingImage(true);
+
+    try {
+      const response = await authorizedFetch("/api/items/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: itemForm.name,
+          category: itemForm.category,
+          color: itemForm.color || undefined,
+          brand: itemForm.brand || undefined,
+          notes: itemForm.notes || undefined,
+        }),
+      });
+      const payload = (await response.json()) as { image_data_url?: string; error?: string };
+
+      if (!response.ok || !payload.image_data_url) {
+        throw new Error(payload.error ?? "画像生成に失敗しました");
+      }
+
+      setSelectedFile(null);
+      setGeneratedImageFilename(`${itemForm.category}-${Date.now()}.png`);
+      setSelectedImageDataUrl(payload.image_data_url);
+      setImagePreviewUrl(payload.image_data_url);
+      setScreenMessage("服画像を生成しました。必要ならそのまま保存できます。");
+    } catch (error) {
+      setScreenError(error instanceof Error ? error.message : "画像生成に失敗しました");
+    } finally {
+      setIsGeneratingImage(false);
+    }
   }
 
   async function handleEditFileChange(file: File | null) {
@@ -854,7 +900,7 @@ export function ClosetApp() {
   }
 
   async function uploadItemImage() {
-    if (!selectedImageDataUrl || !selectedFile) {
+    if (!selectedImageDataUrl) {
       return null;
     }
 
@@ -868,7 +914,7 @@ export function ClosetApp() {
         },
         body: JSON.stringify({
           image_data_url: selectedImageDataUrl,
-          filename: selectedFile.name,
+          filename: selectedFile?.name ?? generatedImageFilename ?? "generated-item.png",
         }),
       });
       const payload = (await response.json()) as { public_url?: string; error?: string };
@@ -968,7 +1014,7 @@ export function ClosetApp() {
     try {
       let primaryImageUrl: string | null = null;
 
-      if (selectedFile && selectedImageDataUrl) {
+      if (selectedImageDataUrl) {
         primaryImageUrl = await uploadItemImage();
       }
 
@@ -998,6 +1044,7 @@ export function ClosetApp() {
       setItems((current) => [payload.item as Item, ...current]);
       setItemForm(initialItemForm);
       setSelectedFile(null);
+      setGeneratedImageFilename(null);
       setSelectedImageDataUrl(null);
       setImagePreviewUrl(null);
       setAnalysis(null);
@@ -1608,6 +1655,14 @@ export function ClosetApp() {
                 <div className="field action-cell">
                   <span>補助</span>
                   <div className="actions compact-actions">
+                    <button
+                      className="button"
+                      disabled={!selectedClosetId || isGeneratingImage || isSubmitting || isUploading}
+                      onClick={handleGenerateImage}
+                      type="button"
+                    >
+                      {isGeneratingImage ? "生成中..." : "画像を生成"}
+                    </button>
                     <button
                       className="button"
                       disabled={!selectedImageDataUrl || isAnalyzing}
