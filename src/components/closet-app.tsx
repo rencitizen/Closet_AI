@@ -2,8 +2,7 @@
 
 import { FormEvent, PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -238,6 +237,7 @@ function statusClassName(status: string) {
 export function ClosetApp() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const pathname = usePathname();
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -1421,13 +1421,13 @@ export function ClosetApp() {
           </div>
 
           <nav className="sidebar-nav">
-            <Link className={navClassName("/dashboard")} href="/dashboard">ダッシュボード</Link>
-            <Link className={navClassName("/closets")} href="/closets">クローゼット</Link>
-            <Link className={navClassName("/items")} href="/items">アイテム管理</Link>
-            <Link className={navClassName("/outfits")} href="/outfits">コーデ作成</Link>
-            <Link className={navClassName("/wear-log")} href="/wear-log">着用ログ</Link>
-            <Link className={navClassName("/care")} href="/care">ケア管理</Link>
-            <Link className={navClassName("/analytics")} href="/analytics">分析</Link>
+            <button className={navClassName("/dashboard")} onClick={() => router.push("/dashboard")} type="button">ダッシュボード</button>
+            <button className={navClassName("/closets")} onClick={() => router.push("/closets")} type="button">クローゼット</button>
+            <button className={navClassName("/items")} onClick={() => router.push("/items")} type="button">アイテム管理</button>
+            <button className={navClassName("/outfits")} onClick={() => router.push("/outfits")} type="button">コーデ作成</button>
+            <button className={navClassName("/wear-log")} onClick={() => router.push("/wear-log")} type="button">着用ログ</button>
+            <button className={navClassName("/care")} onClick={() => router.push("/care")} type="button">ケア管理</button>
+            <button className={navClassName("/analytics")} onClick={() => router.push("/analytics")} type="button">分析</button>
           </nav>
 
           <div className="sidebar-stats">
