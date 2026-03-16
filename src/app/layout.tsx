@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Closet AI",
-  description: "クローゼット管理、コーデ記録、着用ログ、ケア管理を一体化したCLOSET_OS。",
+  description: "クローゼット管理、服だけのコーデ作成、着用記録、ケア管理をまとめた個人用アプリ",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

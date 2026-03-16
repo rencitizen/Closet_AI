@@ -1,5 +1,5 @@
-import { ClosetApp } from "@/components/closet-app";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return <ClosetApp />;
+  redirect("/dashboard");
 }

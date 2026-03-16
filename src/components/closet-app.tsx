@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -197,6 +199,7 @@ function statusClassName(status: string) {
 
 export function ClosetApp() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -274,6 +277,15 @@ export function ClosetApp() {
     if (filterColor && !(item.color ?? "").toLowerCase().includes(filterColor.toLowerCase())) return false;
     return true;
   });
+  const currentRoute = pathname === "/" ? "/dashboard" : pathname;
+
+  function isRoute(route: string) {
+    return currentRoute === route;
+  }
+
+  function navClassName(route: string) {
+    return isRoute(route) ? "is-active" : "";
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -1178,16 +1190,13 @@ export function ClosetApp() {
           </div>
 
           <nav className="sidebar-nav">
-            <a href="#dashboard">ダッシュボード</a>
-            <a href="#closets">クローゼット</a>
-            <a href="#filters">フィルタ</a>
-            <a href="#masters">タグと保管場所</a>
-            <a href="#items">アイテム登録</a>
-            <a href="#gallery">アイテム一覧</a>
-            <a href="#outfits">コーデ作成</a>
-            <a href="#wear-log">着用ログ</a>
-            <a href="#care">ケア管理</a>
-            <a href="#analytics">分析</a>
+            <Link className={navClassName("/dashboard")} href="/dashboard">ダッシュボード</Link>
+            <Link className={navClassName("/closets")} href="/closets">クローゼット</Link>
+            <Link className={navClassName("/items")} href="/items">アイテム管理</Link>
+            <Link className={navClassName("/outfits")} href="/outfits">コーデ作成</Link>
+            <Link className={navClassName("/wear-log")} href="/wear-log">着用ログ</Link>
+            <Link className={navClassName("/care")} href="/care">ケア管理</Link>
+            <Link className={navClassName("/analytics")} href="/analytics">分析</Link>
           </nav>
 
           <div className="sidebar-stats">
@@ -1243,6 +1252,7 @@ export function ClosetApp() {
             </article>
           </section>
 
+          {isRoute("/dashboard") ? (
           <section className="panel section" id="dashboard">
             <div className="kicker">
               <h2>ダッシュボード</h2>
@@ -1267,6 +1277,7 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
           {screenMessage ? (
             <section className="panel section notice-panel">
@@ -1280,6 +1291,7 @@ export function ClosetApp() {
             </section>
           ) : null}
 
+          {isRoute("/closets") ? (
           <section className="panel section" id="closets">
             <div className="kicker">
               <h2>クローゼット</h2>
@@ -1322,7 +1334,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/closets") ? (
           <section className="panel section" id="filters">
             <div className="kicker">
               <h2>検索と保存フィルタ</h2>
@@ -1388,7 +1402,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/closets") ? (
           <section className="panel section" id="masters">
             <div className="kicker">
               <h2>タグと保管場所</h2>
@@ -1450,7 +1466,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/items") ? (
           <section className="panel section" id="items">
             <div className="kicker">
               <h2>アイテム登録</h2>
@@ -1594,7 +1612,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/items") ? (
           <section className="panel section" id="gallery">
             <div className="kicker">
               <h2>アイテム一覧</h2>
@@ -1638,7 +1658,9 @@ export function ClosetApp() {
               <div className="analysis-result empty-state">条件に合うアイテムがありません。</div>
             )}
           </section>
+          ) : null}
 
+          {isRoute("/items") ? (
           <section className="panel section" id="detail">
             <div className="kicker">
               <h2>アイテム詳細</h2>
@@ -1797,7 +1819,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/outfits") ? (
           <section className="panel section" id="outfits">
             <div className="kicker">
               <h2>コーデ作成</h2>
@@ -1869,7 +1893,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/wear-log") ? (
           <section className="panel section" id="wear-log">
             <div className="kicker">
               <h2>着用ログ</h2>
@@ -1903,7 +1929,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/care") ? (
           <section className="panel section" id="care">
             <div className="kicker">
               <h2>ケア管理</h2>
@@ -1976,7 +2004,9 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {isRoute("/analytics") ? (
           <section className="panel section" id="analytics">
             <div className="kicker">
               <h2>分析</h2>
@@ -2011,6 +2041,7 @@ export function ClosetApp() {
               </div>
             </div>
           </section>
+          ) : null}
         </div>
       </div>
     </main>
